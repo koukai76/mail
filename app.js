@@ -11,7 +11,13 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const arr = [];
+const sleep = () => {
+  return new Promise(r =>
+    setTimeout(() => {
+      r(true);
+    }, 500)
+  );
+};
 
 const makeBody = params => {
   params.subject = Buffer.from(params.subject).toString('base64'); //日本語対応
@@ -61,10 +67,10 @@ const sendmail = async (title, body) => {
 };
 
 app.get('/get', (_, res) => {
-  res.send({ to: new Date(), v: 'v3' });
+  res.send({ to: new Date(), v: 'v4' });
 });
 
-app.get('/push', (req, res) => {
+app.get('/push', async (req, res) => {
   try {
     const authorization = req.headers.authorization;
     const title = req.query.title;
@@ -76,9 +82,8 @@ app.get('/push', (req, res) => {
       throw new Error();
     }
 
-    arr.push({ title: title, body: body });
-
-    // await sendmail(title, body);
+    await sleep();
+    sendmail(title, body);
 
     res.send({ to: 'ok' });
   } catch (error) {
@@ -86,45 +91,7 @@ app.get('/push', (req, res) => {
   }
 });
 
-// app.post('/push', (req, res) => {
-//   try {
-//     const authorization = req.headers.authorization;
-//     const title = req.body.title;
-//     const body = req.body.body;
-
-//     if (authorization !== 'Bearer abc') {
-//       throw new Error();
-//     }
-
-//     arr.push({ title: title, body: body });
-
-//     // await sendmail(title, body);
-
-//     res.send({ to: 'ok' });
-//   } catch (error) {
-//     res.send({ to: 'ng' });
-//   }
-// });
-
 app.listen(process.env.PORT || 1234, async () => {
   console.log(process.env.NODE_ENV);
-  console.log('v3');
+  console.log('v4');
 });
-
-const main = () => {
-  try {
-    for (let i = 0; i < 2; i++) {
-      // console.log(arr[0] == null);
-      if (arr[0] == null) {
-        continue;
-      }
-      sendmail(arr[0].title, arr[0].body);
-      arr.shift();
-    }
-  } catch (error) {
-  } finally {
-    setTimeout(main, 1000);
-  }
-};
-
-main();
