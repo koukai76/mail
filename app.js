@@ -1,4 +1,6 @@
-// require('dotenv').config();
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 const express = require('express');
 const { google } = require('googleapis');
@@ -8,6 +10,8 @@ const gmail = google.gmail('v1');
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+const arr = [];
 
 const makeBody = params => {
   params.subject = Buffer.from(params.subject).toString('base64'); //日本語対応
@@ -28,35 +32,39 @@ const makeBody = params => {
 };
 
 const sendmail = async (title, body) => {
-  const oauth2Client = new OAuth2Client(
-    process.env.CLIENTID,
-    process.env.CLIENTSECRET,
-    'http://localhost'
-  );
+  try {
+    const oauth2Client = new OAuth2Client(
+      process.env.CLIENTID,
+      process.env.CLIENTSECRET,
+      'http://localhost'
+    );
 
-  oauth2Client.credentials = JSON.parse(process.env.QUICKSTART);
+    oauth2Client.credentials = JSON.parse(process.env.QUICKSTART);
 
-  const raw = makeBody({
-    to: process.env.TO,
-    from: 'me',
-    subject: title,
-    message: body,
-  });
+    const raw = makeBody({
+      to: process.env.TO,
+      from: 'me',
+      subject: title,
+      message: body,
+    });
 
-  await gmail.users.messages.send({
-    auth: oauth2Client,
-    userId: 'me',
-    resource: {
-      raw: raw,
-    },
-  });
+    await gmail.users.messages.send({
+      auth: oauth2Client,
+      userId: 'me',
+      resource: {
+        raw: raw,
+      },
+    });
+  } catch (error) {
+    console.log('send error');
+  }
 };
 
-app.get('/get', (req, res) => {
-  res.send({ to: new Date() });
+app.get('/get', (_, res) => {
+  res.send({ to: new Date(), v: 'v2' });
 });
 
-app.post('/push', async (req, res) => {
+app.post('/push', (req, res) => {
   try {
     const authorization = req.headers.authorization;
     const title = req.body.title;
@@ -66,7 +74,9 @@ app.post('/push', async (req, res) => {
       throw new Error();
     }
 
-    await sendmail(title, body);
+    arr.push({ title: title, body: body });
+
+    // await sendmail(title, body);
 
     res.send({ to: 'ok' });
   } catch (error) {
@@ -76,4 +86,23 @@ app.post('/push', async (req, res) => {
 
 app.listen(process.env.PORT || 1234, async () => {
   console.log(process.env.NODE_ENV);
+  console.log('v2');
 });
+
+const main = () => {
+  try {
+    for (let i = 0; i < 2; i++) {
+      // console.log(arr[0] == null);
+      if (arr[0] == null) {
+        continue;
+      }
+      sendmail(arr[0].title, arr[0].body);
+      arr.shift();
+    }
+  } catch (error) {
+  } finally {
+    setTimeout(main, 1000);
+  }
+};
+
+main();
