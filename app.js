@@ -61,14 +61,16 @@ const sendmail = async (title, body) => {
 };
 
 app.get('/get', (_, res) => {
-  res.send({ to: new Date(), v: 'v2' });
+  res.send({ to: new Date(), v: 'v3' });
 });
 
-app.post('/push', (req, res) => {
+app.get('/push', (req, res) => {
   try {
     const authorization = req.headers.authorization;
-    const title = req.body.title;
-    const body = req.body.body;
+    const title = req.query.title;
+    const body = req.query.body;
+
+    // console.log(title, body, authorization);
 
     if (authorization !== 'Bearer abc') {
       throw new Error();
@@ -84,9 +86,29 @@ app.post('/push', (req, res) => {
   }
 });
 
+// app.post('/push', (req, res) => {
+//   try {
+//     const authorization = req.headers.authorization;
+//     const title = req.body.title;
+//     const body = req.body.body;
+
+//     if (authorization !== 'Bearer abc') {
+//       throw new Error();
+//     }
+
+//     arr.push({ title: title, body: body });
+
+//     // await sendmail(title, body);
+
+//     res.send({ to: 'ok' });
+//   } catch (error) {
+//     res.send({ to: 'ng' });
+//   }
+// });
+
 app.listen(process.env.PORT || 1234, async () => {
   console.log(process.env.NODE_ENV);
-  console.log('v2');
+  console.log('v3');
 });
 
 const main = () => {
